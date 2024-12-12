@@ -2,11 +2,13 @@
 """Turns txt file to ngrams"""
 
 import json
-from os import listdir, path
-from sys import argv
+from pathlib import Path
+import appdirs
 
 NGRAM_MAX_LENGTH = 5  # Quadrigrams
 IGNORED_CHARS = "1234567890 \t\r\n\ufeff↵"
+APP_NAME = "Kalamine"
+APP_AUTHOR = "1dk"
 
 
 def parse_corpus(txt: str) -> dict:
@@ -71,33 +73,52 @@ def parse_corpus(txt: str) -> dict:
     for ngram in range(1, NGRAM_MAX_LENGTH):
         ngrams[ngram] = sort_by_frequency(ngrams[ngram], ngrams_count[ngram], 4)
 
-    return ngrams
+    return ngrams, ngrams_count
 
 
-def read_corpus(file_path: str, name: str = "", encoding="utf-8"):
+def read_corpus(file_path: str, name: str = "", encoding="utf-8") -> dict:
     try:
-        with open(file_path, "r", encoding=encoding) as file:
+        path = Path(file_path)
+        if not path.is_file:
+            raise Exception("Error, this is not a file")
+        if name == "":
+            name = path.stem
+        with path.open("r", encoding=encoding) as file:
             corpus_txt = "↵".join(file.readlines())
+        ngrams_freq, ngrams_count = parse_corpus(corpus_txt)
         return {
             "name": name,
             #   "text": corpus_txt,
-            "freq": parse_corpus(corpus_txt),
+            "freq": ngrams_freq,
+            "count": ngrams_count,
         }
     except:
         print("file could not be read")
 
 
-def add_corpus():
-    pass
+def add_corpus(file_path: str, name: str = "", encoding="utf-8"):
+    corpus = read_corpus(file_path, name, encoding)
+    data_path = Path(appdirs.user_config_dir(APP_NAME, APP_AUTHOR))
+    data_path.mkdir(parents=True, exist_ok=True)
+    data_path = data_path / f"{name}.json"
+    try:
+        with data_path.open("w", encoding="utf-8") as outfile:
+            json.dump(corpus, outfile, indent=4, ensure_ascii=False)
+    except:
+        print(f"Error: could not write to {data_path}")
 
 
-def rm_corpus():
-    # todo
-    pass
+def rm_corpus(name: str):
+    corpus_path = Path(appdirs.user_config_dir(APP_NAME, APP_AUTHOR))
+    corpus_path = corpus_path / f"{name}.json"
+    try:
+        corpus_path.unlink()
+    except FileNotFoundError:
+        print("Corpus do not exist")
 
 
 if __name__ == "__main__":
-    corpus = read_corpus(
+    """corpus = read_corpus(
         "/home/cedc/Documents/Projets_perso/FOSS/kalamine/kalamine/www/corpus/hugo_fantine.txt",
         name="hugo_cc",
     )
@@ -114,3 +135,9 @@ if __name__ == "__main__":
         count[n] = sum(corpus["freq"][n].values())
 
     print(count)
+    """
+    add_corpus(
+        "/home/cedc/Documents/Projets_perso/FOSS/kalamine/kalamine/www/corpus/hugo_fantine.txt",
+        "test2",
+    )
+    rm_corpus("test")
