@@ -73,6 +73,8 @@ Build your layout:
 
     kalamine build layout.toml
 
+Optionally, build your layout with embeded angle-mod(#) for ISO keyboards
+
 Get all distributable keyboard drivers:
 
 .. code-block:: bash
