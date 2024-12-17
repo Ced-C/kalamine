@@ -11,6 +11,7 @@ from .generators import ahk, keylayout, klc, web, xkb
 from .help import create_layout, user_guide
 from .layout import KeyboardLayout, load_layout
 from .server import keyboard_server
+from .corpus import add_corpus, rm_corpus
 
 
 @click.group()
@@ -185,6 +186,30 @@ def watch(filepath: Path, angle_mod: bool) -> None:
     """Watch a layout description file and display it in a web browser."""
     keyboard_server(filepath, angle_mod)
 
+@cli.group()
+def corpus(**kwargs):
+    """Manages corpus for Analyser"""
+    pass
+
+@corpus.command()
+@click.argument("filename")
+@click.option("-n",
+              "--name",
+              default="",
+              type=str,
+              help="Define corpus name",
+)
+@click.option("-c",
+            "--encoding",
+            default="utf-8",
+            type=str)
+def add(filename, name, encoding):
+    add_corpus(filename, name, encoding)
+
+@corpus.command()
+@click.argument("name")
+def rm(name):
+    rm_corpus(name)
 
 @cli.command()
 def guide() -> None:

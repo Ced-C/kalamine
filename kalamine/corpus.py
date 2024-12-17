@@ -81,7 +81,7 @@ def read_corpus(file_path: str, name: str = "", encoding="utf-8") -> dict:
         path = Path(file_path)
         if not path.is_file:
             raise Exception("Error, this is not a file")
-        if name == "":
+        if not name:
             name = path.stem
         with path.open("r", encoding=encoding) as file:
             corpus_txt = "↵".join(file.readlines())
@@ -93,19 +93,21 @@ def read_corpus(file_path: str, name: str = "", encoding="utf-8") -> dict:
             "count": ngrams_count,
         }
     except:
-        print("file could not be read")
+        print("file does not exist or could not be read")
 
 
 def add_corpus(file_path: str, name: str = "", encoding="utf-8"):
     corpus = read_corpus(file_path, name, encoding)
-    data_path = Path(appdirs.user_config_dir(APP_NAME, APP_AUTHOR)) / "corpuses"
-    data_path.mkdir(parents=True, exist_ok=True)
-    data_path = data_path / f"{name}.json"
-    try:
-        with data_path.open("w", encoding="utf-8") as outfile:
-            json.dump(corpus, outfile, indent=4, ensure_ascii=False)
-    except:
-        print(f"Error: could not write to {data_path}")
+    if corpus is not None:
+        data_path = Path(appdirs.user_config_dir(APP_NAME, APP_AUTHOR)) / "corpuses"
+        data_path.mkdir(parents=True, exist_ok=True)
+        data_path = data_path / f"{corpus["name"]}.json"
+        try:
+            with data_path.open("w", encoding="utf-8") as outfile:
+                json.dump(corpus, outfile, indent=4, ensure_ascii=False)
+                print(f"Corpus “{corpus['name']}” added to {data_path}")
+        except:
+            print(f"Error: could not write to {data_path}")
 
 
 def rm_corpus(name: str):
@@ -113,8 +115,9 @@ def rm_corpus(name: str):
     corpus_path = corpus_path / f"{name}.json"
     try:
         corpus_path.unlink()
+        print(f"Corpus “{name}” deleted")
     except FileNotFoundError:
-        print("Corpus do not exist")
+        print(f"Corpus “{name}” does not exist")
 
 def merge_corpuses(corpus_list:list, name:str)-> None:
     merge_corpus = {
@@ -152,11 +155,18 @@ def merge_corpuses(corpus_list:list, name:str)-> None:
                 merge_corpus["count"] += corpus["count"][ngram]
 
 def get_corpus(name:str) -> str:
-    """If corupus exist, provides its json, else, send empty str"""
+    """If corpus exist, provides its json, else, send empty str"""
+    # testing in user folder first
     corpus_path = Path(appdirs.user_config_dir(APP_NAME, APP_AUTHOR)) / "corpuses" / f"{name}.json"
     if corpus_path.exists():
         with open(corpus_path, "r") as corpus:
             return json.load(corpus)
+    # then, in kalamine package
+    corpus_path = Path(f"./kalamine/www/corpus/{name}.json")
+    if corpus_path.exists():
+        with open(corpus_path, "r") as corpus:
+            return json.load(corpus)
+
     return ""
 
 def get_corpuses()-> dict:
