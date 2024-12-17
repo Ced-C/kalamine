@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
 """Turns txt file to ngrams"""
 
 import json
 from pathlib import Path
 import appdirs
+import click
 
 NGRAM_MAX_LENGTH = 5  # Quadrigrams
 IGNORED_CHARS = "1234567890 \t\r\n\ufeff↵"
@@ -98,7 +98,7 @@ def read_corpus(file_path: str, name: str = "", encoding="utf-8") -> dict:
 
 def add_corpus(file_path: str, name: str = "", encoding="utf-8"):
     corpus = read_corpus(file_path, name, encoding)
-    data_path = Path(appdirs.user_config_dir(APP_NAME, APP_AUTHOR))
+    data_path = Path(appdirs.user_config_dir(APP_NAME, APP_AUTHOR)) / "corpuses"
     data_path.mkdir(parents=True, exist_ok=True)
     data_path = data_path / f"{name}.json"
     try:
@@ -109,12 +109,69 @@ def add_corpus(file_path: str, name: str = "", encoding="utf-8"):
 
 
 def rm_corpus(name: str):
-    corpus_path = Path(appdirs.user_config_dir(APP_NAME, APP_AUTHOR))
+    corpus_path = Path(appdirs.user_config_dir(APP_NAME, APP_AUTHOR)) / "corpuses"
     corpus_path = corpus_path / f"{name}.json"
     try:
         corpus_path.unlink()
     except FileNotFoundError:
         print("Corpus do not exist")
+
+def merge_corpuses(corpus_list:list, name:str)-> None:
+    merge_corpus = {
+        "name" : name,
+        "freq" : {
+            1:{},
+            2:{},
+            3:{},
+        },
+        "count": {},
+    }
+    ngram_length = -1
+    for corpus_path in corpus_list:
+        try:
+            corpus = json.loads(corpus_path)
+        except:
+            click.echo(f"Warning: cannot open corpus called {corpus_path.stem} ; skipping this file")
+            continue
+        
+        # merge on fewest ngram available, ignore above ngrams
+        if ngram_length < 0:
+            ngram_length = len(corpus["freq"].keys()+1)
+        else:
+            ngram_length = min( ngram_length, len(corpus["freq"].keys()+1))
+
+        for n in range(ngram_length):
+            for ngram, ngram_freq in corpus["freq"][n].items():
+                if ngram not in merge_corpus:
+                    merge_corpus["freq"][n][ngram] = ngram_freq
+                else:
+                    merge_corpus["freq"][n][ngram] = (
+                        merge_corpus["freq"][n][ngram]*merge_corpus["count"][n] +
+                        ngram_freq * corpus["count"][n]) / (merge_corpus["count"][n]+corpus["count"][n]) 
+
+                merge_corpus["count"] += corpus["count"][ngram]
+
+def get_corpus(name:str) -> str:
+    """If corupus exist, provides its json, else, send empty str"""
+    corpus_path = Path(appdirs.user_config_dir(APP_NAME, APP_AUTHOR)) / "corpuses" / f"{name}.json"
+    if corpus_path.exists():
+        with open(corpus_path, "r") as corpus:
+            return json.load(corpus)
+    return ""
+
+def get_corpuses()-> dict:
+    pass #todo
+    """get all corpus in user data and std ones for web server"""
+    corpuses = {}
+    
+    # misses : load std corpus 
+    corpus_path = Path(appdirs.user_config_dir(APP_NAME, APP_AUTHOR)) / "corpuses"
+    for file in corpus_path.glob("*.json"):
+        if file.is_file():
+            corpus_name = file.stem
+            corpuses[corpus_name] = get_corpus(corpus_name)
+    
+    return corpuses 
 
 
 if __name__ == "__main__":
