@@ -62,7 +62,6 @@ def keyboard_server(file_path: Path, angle_mod: bool = False) -> None:
             # XXX always reloads the layout on the root page, never in sub pages
             nonlocal kb_layout
             nonlocal angle_mod
-
             if self.path == "/favicon.ico":
                 pass
             elif self.path == "/json":
@@ -85,18 +84,18 @@ def keyboard_server(file_path: Path, angle_mod: bool = False) -> None:
             elif self.path == "/svg":
                 utf8 = ET.tostring(web.svg(kb_layout).getroot(), encoding="unicode")
                 send(utf8, content="image/svg+xml")
-            
-            
-            elif self.path.split("/")[1] == "getcorpus": # looking for url like `/getcorpus/corpus``
+            elif self.path.split("/")[1] == "getcorpus": # looking for url like `/getcorpus/corpus`
                 corpus_name = self.path.split("/")
                 if len(corpus_name) < 3: #return error
                     pass
                 else:
                     corpus_name = corpus_name[2]
-                    json_corpus = json.dumps(get_corpus(corpus_name))
-                    send(json_corpus, content="application/json")
-            
-            
+                    _corpus = get_corpus(corpus_name)
+                    if _corpus:
+                        json_corpus = json.dumps(_corpus)
+                        send(json_corpus, content="application/json")
+                    else:
+                        pass # is it good practice to send back an error ?
             elif self.path == "/":
                 kb_layout = KeyboardLayout(load_layout(file_path), angle_mod)  # refresh
                 send(main_page(kb_layout, angle_mod), content="text/html")

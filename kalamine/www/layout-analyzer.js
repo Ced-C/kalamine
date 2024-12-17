@@ -568,12 +568,14 @@ window.addEventListener('DOMContentLoaded', () => {
       }
     } else if (key === 'corpus') {
       if (value && value !== corpusName) {
-        fetch(`/corpus/${value}.json`)
+        fetch(`/getcorpus/${value}`)
           .then(response => response.json())
           .then(data => {
-            corpus = data.symbols;
-            digrams = data.digrams;
-            trigrams = data.trigrams;
+            console.log(`test -> ${value}`)
+            console.log(data)
+            corpus = data.freq["1"];
+            digrams = data.freq["2"];
+            trigrams = data.freq["3"];
             if (Object.keys(keyChars).length > 0) {
               computeHeatmap();
               computeNGrams();
